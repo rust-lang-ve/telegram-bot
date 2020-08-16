@@ -1,17 +1,13 @@
 extern crate iron;
 
-use iron::prelude::*;
-use iron::status;
-use std::env;
+use telegram_bot::Error;
 
-fn main() {
-    fn hello_world(_: &mut Request) -> IronResult<Response> {
-        Ok(Response::with((status::Ok, "Hello World!")))
-    }
+mod bot;
+mod server;
 
-    let url = format!("0.0.0.0:{}", env::var("PORT").unwrap());
+#[tokio::main]
+async fn main() -> Result<(), Error> {
+  server::bind_and_serve();
 
-    println!("Binding on {:?}", url);
-    Iron::new(hello_world).http(&url[..]).unwrap();
-    println!("Bound on {:?}", url);
+  Ok(())
 }
