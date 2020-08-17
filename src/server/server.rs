@@ -14,26 +14,35 @@ pub async fn bind_and_serve() {
     return;
   }
 
-  match bot.activate().await {
-    Ok(_) => {
-      for request in server.incoming_requests() {
-        println!("received request: {:?}, url: {:?}, headers: {:?}",
-          request.method(),
-          request.url(),
-          request.headers());
+  for request in server.incoming_requests() {
+    println!("received request: {:?}, url: {:?}, headers: {:?}",
+      request.method(),
+      request.url(),
+      request.headers());
 
-        if bot.is_active {
-          bot.send_to_chat("Hello fellow Rustaceans!");
-        }
+    let url = request.url();
 
-        let response = Response::from_string("Hello fellow Rustaceans!");
-        if let Err(err) = request.respond(response) {
-          println!("Error!: {:?}", err);
-        }
-      }
-    },
-    Err(err) => {
-      println!("Error!: {:?}", err);
+    // lots of unwrap calls, horrible but is for testing purposes! :D
+    if url.contains("/activate") {
+      match bot.activate().await {
+        Ok(_) => request.respond(Response::from_string("Bot Active!")).unwrap(),
+        Err(err) => request.respond(Response::from_string(err.to_string())).unwrap()
+      };
+
+      return;
     }
+
+    if url.contains("/send") {
+      if bot.is_active {
+        bot.send_to_chat("Hello fellow Rustaceans!");
+        request.respond(Response::from_string("Sent!")).unwrap();
+      } else {
+        request.respond(Response::from_string("Not sent! :(")).unwrap();
+      }
+
+      return;
+    }
+
+    request.respond(Response::from_string("NOT FOUND WITHOUT STATUS CODE :D")).unwrap();
   }
 }

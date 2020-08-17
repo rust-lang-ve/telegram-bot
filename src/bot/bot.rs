@@ -52,7 +52,7 @@ impl Bot {
             self.is_active = true;
 
             tokio::spawn(async move {
-              match api.send(chat.text("Hello".to_string())).await {
+              match api.send(chat.text("Hello, you have activated the RUST LANG VE BOT!".to_string())).await {
                 Ok(_) => {},
                 Err(err) => {
                   println!("Error!: {:?}", err);
