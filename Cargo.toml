@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 futures = "0.3"
-iron = "0.6.1"
+tiny_http = "0.6"
 telegram-bot = "0.7"
 tokio = { version = "0.2", features = ["macros", "fs"]}
 

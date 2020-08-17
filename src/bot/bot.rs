@@ -1,20 +1,25 @@
 use futures::StreamExt;
 use std::env;
+use telegram_bot::prelude::*;
 use telegram_bot::{
   Api,
-  CanReplySendMessage,
   Error,
+  GetMe,
   MessageKind,
   UpdateKind,
   UpdatesStream,
+  ChatId,
 };
 
 pub struct Bot {
   pub api: Api,
   pub stream: UpdatesStream,
+  pub is_active: bool,
+  pub chat_id: Option<ChatId>,
 }
 
 const TELEGRAM_BOT_TOKEN: &str = "TELEGRAM_BOT_TOKEN";
+const ACTIVATE_COMMAND: &str = "/activate";
 
 impl Bot {
   pub fn new() -> Self {
@@ -24,27 +29,47 @@ impl Bot {
     let api = Api::new(token);
     let stream = api.stream();
 
-    Self { api, stream }
+    Self { api, stream, is_active: false, chat_id: None }
   }
 
-  pub async fn listen(&mut self) -> Result<(), Error> {
+  pub fn send_to_chat(&self, message: &str) {
+    if let Some(chat) = self.chat_id {
+      self.api.spawn(chat.text(message));
+    }
+  }
+
+  pub async fn activate(&mut self) -> Result<(), Error> {
     while let Some(update) = self.stream.next().await {
-      // check if the received update contains a message
       let update = update?;
 
       if let UpdateKind::Message(message) = update.kind {
-        if let MessageKind::Text { ref data, .. } = message.kind {
-          // Answer message with "Hi".
-          self
-            .api
-            .send(message.text_reply(format!(
-              "Hi, {}! You just wrote '{}'",
-              &message.from.first_name, data
-            )))
-            .await?;
+        match message.kind {
+          MessageKind::Text { ref data, .. } if data.as_str() == ACTIVATE_COMMAND => {
+            let api = self.api.clone();
+            let chat = message.chat.clone();
+
+            self.chat_id = Some(message.chat.id());
+            self.is_active = true;
+
+            tokio::spawn(async move {
+              match api.send(chat.text("Hello".to_string())).await {
+                Ok(_) => {},
+                Err(err) => {
+                  println!("Error!: {:?}", err);
+                }
+              };
+            });
+          },
+          _ => (),
         }
       }
     }
+
+    Ok(())
+  }
+
+  pub async fn get_me(&self) -> Result<(), Error> {
+    self.api.send(GetMe).await?;
 
     Ok(())
   }
