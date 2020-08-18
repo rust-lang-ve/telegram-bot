@@ -1,6 +1,7 @@
 use crate::bot::Bot;
 use std::env;
 use tiny_http::{Server, Response};
+use telegram_bot::prelude::*;
 
 pub async fn bind_and_serve() {
   let port = env::var("PORT").expect("Missing PORT environment variable");
@@ -34,12 +35,12 @@ pub async fn bind_and_serve() {
 
     if url.contains("/send") {
       if bot.is_active {
-        bot.send_to_chat("Hello fellow Rustaceans!");
+        bot.api.spawn(bot.chat_id.unwrap().text("Hello fellow Rustaceans!"));
         request.respond(Response::from_string("Sent!")).unwrap();
-      } else {
-        request.respond(Response::from_string("Not sent! :(")).unwrap();
+        return;
       }
 
+      request.respond(Response::from_string("Not sent! :(")).unwrap();
       return;
     }
 

@@ -32,12 +32,6 @@ impl Bot {
     Self { api, stream, is_active: false, chat_id: None }
   }
 
-  pub fn send_to_chat(&self, message: &str) {
-    if let Some(chat) = self.chat_id {
-      self.api.spawn(chat.text(message));
-    }
-  }
-
   pub async fn activate(&mut self) -> Result<(), Error> {
     while let Some(update) = self.stream.next().await {
       let update = update?;
